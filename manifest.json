@@ -1,0 +1,18 @@
+{
+    "name": "Codeforces Notifier",
+    "description": "Notify Verdict Of Submission on Codeforces",
+    "version": "1.0",
+    "manifest_version": 2, 
+    "permissions":["tabs","http://*.codeforces.com/*","https://*.codeforces.com/*","webRequest","webRequestBlocking","notifications"],
+    "background": { 
+      "scripts": ["background.js"]
+   },"content_scripts": [
+    {
+      "matches": ["https://*.codeforces.com/*","http://*.codeforces.com/*"],
+      "js": ["content-script.js"]
+    }
+  ],"icons": { 
+    "16": "images/cf.png",
+    "48": "images/cf.png",
+   "128": "images/cf.png" }
+  }
