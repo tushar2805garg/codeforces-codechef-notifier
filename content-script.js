@@ -1,40 +1,19 @@
-var username=localStorage.getItem("username");
-var loggedin=true;
-console.log(username);
-if(username === null){
+var username=null;
    username =document.querySelector("#header > div.lang-chooser > div:nth-child(2) > a:nth-child(1)").innerText;
    loggedin=document.querySelector("#header > div.lang-chooser > div:nth-child(2) > a:nth-child(2)").innerText;
-//    console.log(username + "    "+ loggedin);
+   console.log(username + "    "+ loggedin);
    if(loggedin === "Register"){
        loggedin =false;
+       username=null;
+       username=null;
+       chrome.storage.sync.set({"lastcontestid": null}, function() {
+        console.log('Value is set to ' + lastcontestid);
+      });
    }
-   else{
-       loggedin =true;
-    localStorage.setItem("username",username);
-   }
-}
-else{
-    var curr=document.querySelector("#header > div.lang-chooser > div:nth-child(2) > a:nth-child(1)").innerText;
-    loggedin=document.querySelector("#header > div.lang-chooser > div:nth-child(2) > a:nth-child(2)").innerText;
-    //   console.log(username + "    "+ loggedin);
-   if(loggedin === "Register"){
-       loggedin = false;
-       localStorage.removeItem("username");
-   }
-   else if(curr !== username){
-       loggedin =true;
-       username =curr;
-       localStorage.removeItem("username");
-       localStorage.setItem("username",username);
-   }
-   else{
-       loggedin =true;
-   }
-}
-console.log(loggedin);
-if(loggedin === true){
+   chrome.storage.sync.set({"username": username}, function() {
+    console.log('Value is set to ' + value);
+  });
     chrome.runtime.sendMessage({user_name:username }, function(response) {
         // console.log(response.farewell);
         console.log(response.res);
       });
-}

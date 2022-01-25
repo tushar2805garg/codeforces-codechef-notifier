@@ -3,7 +3,7 @@
     "description": "Notify Verdict Of Submission on Codeforces",
     "version": "1.0",
     "manifest_version": 2, 
-    "permissions":["tabs","http://*.codeforces.com/*","https://*.codeforces.com/*","webRequest","webRequestBlocking","notifications"],
+    "permissions":["tabs","storage", "http://*.codeforces.com/*","https://*.codeforces.com/*","webRequest","webRequestBlocking","notifications"],
     "background": { 
       "scripts": ["background.js"]
    },"content_scripts": [
