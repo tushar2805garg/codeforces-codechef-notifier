@@ -6,8 +6,11 @@ var verdict=null;
 var passedcount=0;
 var lastcontestid=null;
 var fulfill=-1;
+var lastcontestname=null;
+
+// Chrome storage to fetch data starts..
+
 chrome.storage.sync.get(['username'], function(result) {
-    // console.log('Value currently is ' + result.username);
     if(result.username !== undefined){
         username =result.username;
         fetchdetails();
@@ -17,20 +20,64 @@ chrome.storage.sync.get(['username'], function(result) {
 chrome.storage.sync.get(['lastcontestid'], function(result) {
     if(result.lastcontestid !== undefined){
         lastcontestid=result.lastcontestid;
-        lastcontestid=result.lastcontestid;
     }
-fetchratingdetails();
 });
+
+
+chrome.storage.sync.get(['lastcontestname'], function(result) {
+    if(result.lastcontestname !== undefined){
+        lastcontestname=result.lastcontestname;
+    }
+});
+
+// Chrome storage to fetch data ends..
+// Set interval starts
+
+fetchratingdetails();
 setInterval(fetchratingdetails, 300*1000);
+fetchupcomingcontest();
+setInterval(fetchupcomingcontest, 600*1000);
+
+// Set interval ends
+// Convert time to minutes start..
+
+function converttominute(str,c){
+    var ans=0;
+    ans=( Number(str[0]-'0')*10+ Number(str[1]-'0'))*60+ Number(str[3])*10+Number(str[4]);
+    if(c === 1){
+        ans=ans+330;
+    }
+    return ans;
+}
+
+// Convert time to minute ends..
+// Get time starts 
+function getTime() {
+    var now     = new Date(); 
+    var hour    = now.getHours();
+    var minute  = now.getMinutes(); 
+    if(hour.toString().length == 1) {
+         hour = '0'+hour;
+    }
+    if(minute.toString().length == 1) {
+         minute = '0'+minute;
+    }
+    var dateTime =hour+':'+minute;   
+    return dateTime;
+}
+// Get time ends
+
+// fetch image name starts
 function imagename(){
     if(verdict === "OK") return "images/accept.gif";
     else if(verdict === "COMPILATION_ERROR") return "images/compile-error.gif";
     else if(verdict === "RUNTIME_ERROR") return "images/runtime-error.png";
     else if(verdict === "WRONG_ANSWER") return "images/wrong.gif";
-    else if(verdict === "TIME_LIMIT_EXCEEDED" || verdict=="IDLENESS_LIMIT_EXCEEDED") return "images/time_limit_exceed.png";
+    else if((verdict === "TIME_LIMIT_EXCEEDED") || ( verdict=="IDLENESS_LIMIT_EXCEEDED")) return "images/time_limit_exceed.png";
     return "images/runtime-error.gif";
 }
-
+// fetch image name ends
+// fetch verdict name starts
 function VERDICTNAME(){
         var vname="";
         var sz=verdict.length;
@@ -53,43 +100,84 @@ function VERDICTNAME(){
         return vname;
 }
 
-function  notification(){
-    // console.log(problemname+" "+verdict+" ");
+// fetch verdict name ends..
+
+// Notification starts...
+function  notification_for_all(TITLE,MESSAGE,PIC){
+    
     chrome.notifications.create({
-        title: problemname,
-        message: VERDICTNAME(),
-        iconUrl:imagename() ,
+        title: TITLE,
+        message: MESSAGE,
+        iconUrl:PIC ,
         type: 'basic'
     })
 }
+function  notification_problem_solve(){
+    notification_for_all(problemname,VERDICTNAME(),imagename());
+}
 
 
-function notificationratingupdate(curr,prev){
+function notification_rating_update(curr,prev){
     var msg="increases";
     if(curr<prev) msg="decreases";
     var change=Math.abs(curr-prev);
-    chrome.notifications.create({
-        title: "Codeforces Notifier",
-        message: "Your rating on Codeforces "+msg+" by "+change+" and current rating becomes "+curr,
-        iconUrl:"images/cf.png" ,
-        type: 'basic'
-    })
+    var message="Your rating on Codeforces "+msg+" by "+change+" and current rating becomes "+curr;
+    notification_for_all("Codeforces Notifier",message,"images/cf.png");
+}
+
+
+// Notificatons ends..
+
+// Fetching API's starts...
+
+function fetchupcomingcontest(){
+    console.log("HERE");
+var url="https://kontests.net/api/v1/codeforces";
+fetch(url)
+.then(response => response.json() )
+.then(response =>{
+    if(response.length !== 0){
+        var upcmng=response[0];
+        if(upcmng.in_24_hours === "Yes"){
+            var ctname=upcmng.name;
+            if(ctname !== lastcontestname){
+            var starttime=upcmng.start_time;
+            starttime=starttime.substr(11,5);
+            starttime=converttominute(starttime,1);
+            var crtime=converttominute(getTime(),0);
+            var dfinmin=starttime-crtime;
+            console.log(dfinmin);
+            if(dfinmin <= 60){
+                chrome.storage.sync.set({"lastcontestname": ctname}, function() {
+                    console.log('Value is set to ' + ctname);
+                  });
+              lastcontestname=ctname;
+              var message = "Contest on codeforces starts within "+time+ " mins";
+              notification_for_all("Codeforces Notifier",message,"images/cf.png");
+            }
+        }
+    }
+    }
+})
+.catch(errors=>{
+console.log(errors);
+})
 }
 
 
 function fetchratingdetails(){
-    // console.log("FETCH RATING DETIALS CALLED!! "+username);
+    
     if(username === null) return;
     var url="https://codeforces.com/api/user.rating?handle="+username;
     fetch(url)
     .then(response => response.json())
     .then(response =>{
         var resultarray=response.result;
-        // console.log(resultarray);
+       
         if(resultarray.length === 0){ //  new user ...
-            // console.log("LENGTH IS ZERO");
+       
             chrome.storage.sync.set({"lastcontestid": "newuser"}, function() {
-                // console.log('Value is set to ' + crid);
+       
                 lastcontestid="newuser";
                 return;
               });
@@ -98,23 +186,22 @@ function fetchratingdetails(){
            var len=resultarray.length-1;
            var crid=resultarray[len].contestId;
            if(crid === lastcontestid){
-            //    console.log("NULL");
-               return;
+                      return;
            }
            else if(lastcontestid === null){
-            //    console.log(crid);
+       
                lastcontestid = crid;
                chrome.storage.sync.set({"lastcontestid": crid}, function() {
-                // console.log('Value is set to ' + crid);
+       
                 lastcontestid=crid;
                 return;
               });
                return;
            }
            else{
-               notificationratingupdate(resultarray[len].newRating,resultarray[len].oldRating);
+               notification_rating_update(resultarray[len].newRating,resultarray[len].oldRating);
                chrome.storage.sync.set({"lastcontestid": crid}, function() {
-                // console.log('Value is set to ' + crid);
+       
                 lastcontestid=crid;
                 return;
               });
@@ -122,7 +209,7 @@ function fetchratingdetails(){
         }
     })
     .catch(error=>{
-        // console.log(error);
+    
     })
 }
 
@@ -134,8 +221,6 @@ function fetchdetails(sender){
     return fetch(url)
     .then(response => response.json())
     .then(response => {
-        // handle the response
-        // console.log(response);
         var vr=response.result[0].verdict;
         if(vr === undefined || vr=="TESTING"){
             console.log("VERDICT "+username+ " "+  lastsubmittedid + " "+ response.result[0].id);
@@ -154,29 +239,29 @@ function fetchdetails(sender){
             contestid = response.result[0].problem.contestid;
             verdict= response.result[0].verdict;
             passedcount =response.result[0].passedTestCount;
-            notification();
+            notification_problem_solve();
             return;
         }
     })
     .catch(error => {
-        // handle the error
-        // console.log("LOOKS LIKE CODEFORCES IS DOWN!!");
-        // console.log(error);
+        
     });
 }
 
 
+// FETCHING API ENDS..
+
 chrome.runtime.onInstalled.addListener(function() {
-    // console.log("Background Loader starts!");
+    console.log("Background Loader starts!");
 }); 
 
 
+// Listen headers request starts..
 
 chrome.webRequest.onSendHeaders.addListener((details) => {
     // https://codeforces.com/contest/1628/my
 
      var str=details.url;
-    //  console.log(str);
      var sz=str.length;
      var found=false;
     for(var j=0;j<sz-2;j++){
@@ -188,7 +273,10 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
     }
      if(found === true){
          console.log("WEB REQUEST FOUND IN MY URL!   ");
-        fetchdetails(1);
+         fetchdetails(1);
+         fetchdetails(1);
+         fetchdetails(1);
+         fetchdetails(1);
      }
      
 },{
@@ -196,11 +284,12 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
     types:["xmlhttprequest"],
 },["requestHeaders"]);
 
+// Listen header request ends..
+
+// On message listner starts..
 
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
-        // console.log("Response from content file!!")
-    // console.log("CURR->USERNAME "+ request.user_name+ " PREVIOUS->USERNAME "+username);
     if(username !== request.user_name){
     username=request.user_name;
     lastcontestid=null;
@@ -210,3 +299,4 @@ chrome.runtime.onMessage.addListener(
     }
     sendResponse({res: "GOT THE RESPONSE!"});
     })
+// On message listner ends ...
