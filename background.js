@@ -7,37 +7,44 @@ var passedcount=0;
 var lastcontestid=null;
 var fulfill=-1;
 var lastcontestname=null;
-
+function setandfetch(){
 // Chrome storage to fetch data starts..
 
 chrome.storage.sync.get(['username'], function(result) {
+    console.log("A");
     if(result.username !== undefined){
         username =result.username;
         fetchdetails();
     }
 });
-
+// console.log(username);
 chrome.storage.sync.get(['lastcontestid'], function(result) {
+    console.log("B");
     if(result.lastcontestid !== undefined){
         lastcontestid=result.lastcontestid;
     }
 });
-
+// console.log(lastcontestid);
 
 chrome.storage.sync.get(['lastcontestname'], function(result) {
+    console.log("C");
     if(result.lastcontestname !== undefined){
         lastcontestname=result.lastcontestname;
     }
 });
-
+// console.log(lastcontestname);
 // Chrome storage to fetch data ends..
 // Set interval starts
-
+}
+function print(){
+    console.log(username);
+}
+function setandfetch2(){
 fetchratingdetails();
-setInterval(fetchratingdetails, 300*1000);
+setInterval(fetchratingdetails, 100*1000);
 fetchupcomingcontest();
 setInterval(fetchupcomingcontest, 600*1000);
-
+}
 // Set interval ends
 // Convert time to minutes start..
 
@@ -152,7 +159,7 @@ fetch(url)
                     console.log('Value is set to ' + ctname);
                   });
               lastcontestname=ctname;
-              var message = "Contest on codeforces starts within "+time+ " mins";
+              var message = "Contest on codeforces starts within "+dfinmin+ " mins";
               notification_for_all("Codeforces Notifier",message,"images/cf.png");
             }
         }
@@ -166,7 +173,8 @@ console.log(errors);
 
 
 function fetchratingdetails(){
-    
+    console.log("FETCHRATING");
+    console.log(username);
     if(username === null) return;
     var url="https://codeforces.com/api/user.rating?handle="+username;
     fetch(url)
@@ -175,7 +183,7 @@ function fetchratingdetails(){
         var resultarray=response.result;
        
         if(resultarray.length === 0){ //  new user ...
-       
+           console.log("LENGTH 0");
             chrome.storage.sync.set({"lastcontestid": "newuser"}, function() {
        
                 lastcontestid="newuser";
@@ -186,10 +194,11 @@ function fetchratingdetails(){
            var len=resultarray.length-1;
            var crid=resultarray[len].contestId;
            if(crid === lastcontestid){
+               console.log("LAST SAME");
                       return;
            }
            else if(lastcontestid === null){
-       
+               console.log("LAST NULL")
                lastcontestid = crid;
                chrome.storage.sync.set({"lastcontestid": crid}, function() {
        
@@ -199,9 +208,9 @@ function fetchratingdetails(){
                return;
            }
            else{
+               console.log("CALLED");
                notification_rating_update(resultarray[len].newRating,resultarray[len].oldRating);
                chrome.storage.sync.set({"lastcontestid": crid}, function() {
-       
                 lastcontestid=crid;
                 return;
               });
@@ -287,6 +296,13 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
 // Listen header request ends..
 
 // On message listner starts..
+
+
+// call set and fetch fn
+setandfetch();
+setTimeout(print,1000);
+setTimeout(setandfetch2,2000);
+// ends calling.
 
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
