@@ -9,7 +9,6 @@ var fulfill=-1;
 var lastcontestname=null;
 function setandfetch(){
 // Chrome storage to fetch data starts..
-
 chrome.storage.sync.get(['username'], function(result) {
     console.log("A");
     if(result.username !== undefined){
@@ -154,7 +153,7 @@ fetch(url)
             var crtime=converttominute(getTime(),0);
             var dfinmin=starttime-crtime;
             console.log(dfinmin);
-            if(dfinmin <= 60){
+            if(dfinmin <= 60 && dfinmin>=0){
                 chrome.storage.sync.set({"lastcontestname": ctname}, function() {
                     console.log('Value is set to ' + ctname);
                   });
