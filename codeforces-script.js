@@ -13,7 +13,7 @@ var username=null;
    chrome.storage.sync.set({"username": username}, function() {
     console.log('Value is set to ' + value);
   });
-    chrome.runtime.sendMessage({user_name:username }, function(response) {
+    chrome.runtime.sendMessage({user_name:username,"codeforces":true,"codechef":false }, function(response) {
         // console.log(response.farewell);
         console.log(response.res);
       });

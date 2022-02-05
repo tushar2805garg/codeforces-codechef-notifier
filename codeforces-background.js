@@ -40,9 +40,11 @@ function print(){
 }
 function setandfetch2(){
 fetchratingdetails();
-setInterval(fetchratingdetails, 100*1000);
+setInterval(fetchratingdetails, 300*1000);
 fetchupcomingcontest();
 setInterval(fetchupcomingcontest, 600*1000);
+fetch_upcoming_contest_codechef();
+setInterval(fetch_upcoming_contest_codechef,600*1000);
 }
 // Set interval ends
 // Convert time to minutes start..
@@ -74,13 +76,13 @@ function getTime() {
 // Get time ends
 
 // fetch image name starts
-function imagename(){
-    if(verdict === "OK") return "images/accept.gif";
-    else if(verdict === "COMPILATION_ERROR") return "images/compile-error.gif";
-    else if(verdict === "RUNTIME_ERROR") return "images/runtime-error.png";
-    else if(verdict === "WRONG_ANSWER") return "images/wrong.gif";
-    else if((verdict === "TIME_LIMIT_EXCEEDED") || ( verdict=="IDLENESS_LIMIT_EXCEEDED")) return "images/time_limit_exceed.png";
-    return "images/runtime-error.gif";
+function imagename(verdict){
+    if(verdict === "OK" || verdict === "accepted" || verdict.includes("points") === true) return "images/accept.gif";
+    else if(verdict === "COMPILATION_ERROR" || verdict === "compilation error") return "images/compile-error.gif";
+    else if(verdict === "RUNTIME_ERROR" || verdict === "runtime error") return "images/runtime-error.png";
+    else if(verdict === "WRONG_ANSWER" || verdict === "wrong answer") return "images/wrong.gif";
+    else if((verdict === "TIME_LIMIT_EXCEEDED") || ( verdict=="IDLENESS_LIMIT_EXCEEDED") || (verdict =="time limit exceeded")) return "images/time_limit_exceed.png";
+    return "images/runtime-error.png";
 }
 // fetch image name ends
 // fetch verdict name starts
@@ -119,7 +121,7 @@ function  notification_for_all(TITLE,MESSAGE,PIC){
     })
 }
 function  notification_problem_solve(){
-    notification_for_all(problemname,VERDICTNAME(),imagename());
+    notification_for_all(problemname,VERDICTNAME(),imagename(verdict));
 }
 
 
@@ -128,7 +130,7 @@ function notification_rating_update(curr,prev){
     if(curr<prev) msg="decreases";
     var change=Math.abs(curr-prev);
     var message="Your rating on Codeforces "+msg+" by "+change+" and current rating becomes "+curr;
-    notification_for_all("Codeforces Notifier",message,"images/cf.png");
+    notification_for_all("CF-CC Notifier",message,"images/cf.png");
 }
 
 
@@ -159,7 +161,7 @@ fetch(url)
                   });
               lastcontestname=ctname;
               var message = "Contest on codeforces starts within "+dfinmin+ " mins";
-              notification_for_all("Codeforces Notifier",message,"images/cf.png");
+              notification_for_all("CF-CC Notifier",message,"images/cf.png");
             }
         }
     }
@@ -180,11 +182,11 @@ function fetchratingdetails(){
     .then(response => response.json())
     .then(response =>{
         var resultarray=response.result;
-       
+        console.log(lastcontestid);
+        console.log(resultarray);
         if(resultarray.length === 0){ //  new user ...
            console.log("LENGTH 0");
             chrome.storage.sync.set({"lastcontestid": "newuser"}, function() {
-       
                 lastcontestid="newuser";
                 return;
               });
@@ -260,7 +262,7 @@ function fetchdetails(sender){
 // FETCHING API ENDS..
 
 chrome.runtime.onInstalled.addListener(function() {
-    console.log("Background Loader starts!");
+    console.log("Background Loader starts! from codeforces");
 }); 
 
 
@@ -268,9 +270,11 @@ chrome.runtime.onInstalled.addListener(function() {
 
 chrome.webRequest.onSendHeaders.addListener((details) => {
     // https://codeforces.com/contest/1628/my
-
+     console.log(details);
+     console.log("FROM CODEFORCES SEND HEADERS");
      var str=details.url;
      var sz=str.length;
+  
      var found=false;
     for(var j=0;j<sz-2;j++){
         var ano=str.substr(j,3);
@@ -286,7 +290,6 @@ chrome.webRequest.onSendHeaders.addListener((details) => {
          fetchdetails(1);
          fetchdetails(1);
      }
-     
 },{
     urls:["http://*.codeforces.com/*","https://*.codeforces.com/*"],
     types:["xmlhttprequest"],
@@ -305,7 +308,7 @@ setTimeout(setandfetch2,2000);
 
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
-    if(username !== request.user_name){
+    if(username !== request.user_name  && request.codeforces === true){
     username=request.user_name;
     lastcontestid=null;
     lastsubmittedid=null;
